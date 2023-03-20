@@ -14,5 +14,12 @@ COPY . .
 # Testing
 RUN npm run test
 
+# ELiminar archivos y directorios no necesarios en PROD (workaround para optimización,
+# aunque suele realizarse con multi stages)
+RUN rm -rf tests && rm -rf node_modules
+
+# Instalar dependencias de prod
+RUN npm install --prod
+
 # Se corre cuando se levanta la imagen en un container
 CMD [ "node", "app.js" ]
