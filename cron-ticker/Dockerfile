@@ -1,25 +1,24 @@
-FROM node:19.2-alpine3.16
-# /app ya viene en esta imagen
+# Multi staged build optimizado
 
-# cd app
+FROM node:19.2-alpine3.16 as deps
 WORKDIR /app
-
 COPY package.json ./
-
 RUN npm install
 
-# Dest / app
-COPY . .
+FROM node:19.2-alpine3.16 as prod-deps
+WORKDIR /app
+COPY package.json ./
+RUN npm install
 
-# Testing
+FROM node:19.2-alpine3.16 as builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 RUN npm run test
 
-# ELiminar archivos y directorios no necesarios en PROD (workaround para optimización,
-# aunque suele realizarse con multi stages)
-RUN rm -rf tests && rm -rf node_modules
-
-# Instalar dependencias de prod
-RUN npm install --prod
-
-# Se corre cuando se levanta la imagen en un container
+FROM node:19.2-alpine3.16 as runner
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY app.js ./
+COPY tasks/ ./tasks
 CMD [ "node", "app.js" ]
